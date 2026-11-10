@@ -10,6 +10,7 @@ The network I/O lives in :func:`discover`; the parsing lives in
 
 Everything here is local-only: no cloud, no internet.
 """
+
 from __future__ import annotations
 
 import html
@@ -117,9 +118,7 @@ def discover(iface_ip: Optional[str] = None, timeout: float = 5.0) -> list[Camer
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         if iface_ip:
-            sock.setsockopt(
-                socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(iface_ip)
-            )
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(iface_ip))
         sock.settimeout(1.0)
         # Probes are UDP and may be lost; send twice as the reference client does.
         for _ in range(2):

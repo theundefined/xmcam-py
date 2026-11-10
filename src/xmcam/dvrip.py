@@ -23,6 +23,7 @@ password as **plaintext** rather than the classic "Sofia" MD5 hash, so
 :meth:`DVRIPClient.login` tries the hash first and transparently falls back to
 plaintext.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -55,6 +56,13 @@ RET_MEANING = {
 
 _HEADER = struct.Struct("BB2xIIBBHI")  # 20 bytes
 _SEND_HEADER = struct.Struct("BB2xII2xHI")  # 20 bytes, total/cur forced to 0
+
+
+def ret_meaning(ret: Optional[int]) -> str:
+    """Human-readable meaning of a DVRIP ``Ret`` code (handles None/unknown)."""
+    if ret is None:
+        return "no response"
+    return RET_MEANING.get(ret, f"Ret={ret}")
 
 
 def sofia_hash(password: str) -> str:
@@ -176,9 +184,7 @@ class DVRIPClient:
             payload = bytes(data)
 
         packet = (
-            _SEND_HEADER.pack(0xFF, 0, self.session, self.packet_count, msgid, len(payload) + 2)
-            + payload
-            + b"\x0a\x00"
+            _SEND_HEADER.pack(0xFF, 0, self.session, self.packet_count, msgid, len(payload) + 2) + payload + b"\x0a\x00"
         )
         self.packet_count += 1
         self._send_all(packet)
@@ -270,8 +276,7 @@ class DVRIPClient:
         """Like :meth:`login` but raise :class:`LoginError` on failure."""
         if not self.login():
             ret = self.last_login_ret
-            meaning = RET_MEANING.get(ret, f"Ret={ret}")
-            raise LoginError(f"DVRIP login failed for {self.host}: {meaning}", ret=ret)
+            raise LoginError(f"DVRIP login failed for {self.host}: {ret_meaning(ret)}", ret=ret)
 
     def relogin(self) -> bool:
         """Drop the socket and log in again on a fresh connection.

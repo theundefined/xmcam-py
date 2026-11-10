@@ -16,6 +16,7 @@ The package is organised into focused modules:
 
 Everything runs on the local network - no cloud, no internet.
 """
+
 from __future__ import annotations
 
 __version__ = "0.1.0"

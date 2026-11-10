@@ -1,4 +1,5 @@
 """Content-based codec detection (firmware-independent)."""
+
 from __future__ import annotations
 
 from xmcam.media import codec_from_es, demux

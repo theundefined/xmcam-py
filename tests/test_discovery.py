@@ -4,6 +4,7 @@ No real network traffic happens here: the XML samples are synthetic, use the
 TEST-NET-1 range (192.0.2.0/24) and fake MAC addresses, and the socket is
 replaced with a scripted fake.
 """
+
 from __future__ import annotations
 
 import socket
@@ -147,12 +148,8 @@ class _FakeUdpSocket:
 
 
 def test_discover_collects_onvif_devices_and_dedupes(monkeypatch):
-    onvif_xml = _probe_match(
-        "http://192.0.2.10:8899/onvif/device_service", XIONGMAI_SCOPES
-    ).encode()
-    old_xml = _probe_match(
-        "http://192.0.2.30/onvif/device_service", "onvif://www.onvif.org/name/Old"
-    ).encode()
+    onvif_xml = _probe_match("http://192.0.2.10:8899/onvif/device_service", XIONGMAI_SCOPES).encode()
+    old_xml = _probe_match("http://192.0.2.30/onvif/device_service", "onvif://www.onvif.org/name/Old").encode()
     wsd_xml = _probe_match(
         "http://192.0.2.40:5357/wsd/", "http://schemas.xmlsoap.org/ws/2005/04/discovery/Printer"
     ).encode()

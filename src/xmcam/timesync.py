@@ -9,6 +9,7 @@ XM530 / XM535). Setting the clock uses DVRIP ``OPTimeSetting`` (1450).
    nothing on the cameras tested, which is why :func:`get_time` falls back to
    ONVIF. ``set_time`` (1450) is not exercised against live hardware here.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -62,8 +63,8 @@ def set_time(cam: DVRIPClient, when: Optional[datetime] = None) -> dict:
         "OPTimeSetting": when.strftime(_TIME_FORMAT),
         "SessionID": cam.session_hex,
     }
-    reply = cam.send(TIME_SET_MSGID, body)
-    ret = reply.get("Ret") if isinstance(reply, dict) else None
+    reply = cam.send(TIME_SET_MSGID, body) or {}
+    ret = reply.get("Ret")
     if ret not in OK_CODES:
         raise XMCamError(f"time set failed on {cam.host}: Ret={ret}")
     return reply

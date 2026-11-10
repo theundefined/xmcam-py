@@ -1,4 +1,5 @@
 """Tests for the low-level DVRIP client, using the fake socket from conftest."""
+
 from __future__ import annotations
 
 import json
@@ -15,7 +16,7 @@ def _parse_sent(sent: bytes):
     """Split one sent packet into (msgid, parsed-json-body)."""
     header = sent[:20]
     _h, _v, _s, _seq, _t, _c, msgid, length = _HEADER.unpack(header)
-    body = sent[20:20 + length].rstrip(b"\x00").rstrip(b"\x0a").rstrip(b"\x00")
+    body = sent[20 : 20 + length].rstrip(b"\x00").rstrip(b"\x0a").rstrip(b"\x00")
     return msgid, json.loads(body.decode())
 
 
@@ -63,10 +64,7 @@ class TestFraming:
     def test_multipacket_json_reassembly(self, fake_socket_factory):
         full = json.dumps({"Ret": 100, "Name": "X", "value": "y" * 50}).encode() + b"\x0a\x00"
         half = len(full) // 2
-        inbound = (
-            build_frame(1001, full[:half], total=2, cur=0)
-            + build_frame(1001, full[half:], total=2, cur=1)
-        )
+        inbound = build_frame(1001, full[:half], total=2, cur=0) + build_frame(1001, full[half:], total=2, cur=1)
         fake_socket_factory(inbound)
 
         cam = DVRIPClient("192.0.2.10")

@@ -4,11 +4,12 @@ Verified sequence (XM530 firmware): ``Claim`` (msgid 1424) -> ``DownloadStart``
 (msgid 1420, no reply awaited) -> media frames with msgid 1426 until the camera
 closes the stream -> best-effort ``Stop``.
 """
+
 from __future__ import annotations
 
 from typing import Callable, Iterator, Optional
 
-from .dvrip import DVRIPClient, OK_CODES, RET_MEANING
+from .dvrip import DVRIPClient, OK_CODES, ret_meaning
 from .exceptions import DownloadError
 from .models import TIME_FMT, Recording
 
@@ -64,8 +65,7 @@ def iter_recording(
     if ret not in OK_CODES:
         hint = " (channel busy: relogin before the next file)" if ret == 103 else ""
         raise DownloadError(
-            f"OPPlayBack Claim failed for {recording.filename} "
-            f"(Ret={ret}: {RET_MEANING.get(ret, 'unknown')}){hint}"
+            f"OPPlayBack Claim failed for {recording.filename} " f"(Ret={ret}: {ret_meaning(ret)}){hint}"
         )
 
     sock = cam.socket

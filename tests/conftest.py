@@ -4,6 +4,7 @@ These let the whole suite exercise the DVRIP layer without a real camera by
 feeding pre-built frames through a fake socket. Keeping them in ``conftest.py``
 makes them importable from every test module.
 """
+
 from __future__ import annotations
 
 import json

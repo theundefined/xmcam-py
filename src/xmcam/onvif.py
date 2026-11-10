@@ -6,6 +6,7 @@ URL, e.g. ``rtsp://IP:554/user=<LOGIN>_password=<PASSWORD>_channel=0_stream=0&on
 This module parses the replies with regular expressions (stdlib only) and is
 intended for cameras you own.
 """
+
 from __future__ import annotations
 
 import re
@@ -18,10 +19,7 @@ from .exceptions import OnvifError
 from .models import DeviceInfo, StreamUri
 
 DEVICE_NS = 'xmlns:tds="http://www.onvif.org/ver10/device/wsdl"'
-MEDIA_NS = (
-    'xmlns:trt="http://www.onvif.org/ver10/media/wsdl" '
-    'xmlns:tt="http://www.onvif.org/ver10/schema"'
-)
+MEDIA_NS = 'xmlns:trt="http://www.onvif.org/ver10/media/wsdl" ' 'xmlns:tt="http://www.onvif.org/ver10/schema"'
 
 # Primary pattern anchors the password on the following key (so a password
 # that itself contains "_" is not truncated); the fallback is the loose form.
@@ -44,9 +42,7 @@ def soap_post(url: str, body: str, body_ns: str = "", timeout: float = 6.0) -> s
     :class:`~xmcam.exceptions.OnvifError`. Tests monkeypatch this function.
     """
     data = _envelope(body, body_ns).encode("utf-8")
-    req = urllib.request.Request(
-        url, data=data, headers={"Content-Type": "application/soap+xml; charset=utf-8"}
-    )
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/soap+xml; charset=utf-8"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return resp.read().decode("utf-8", errors="replace")
@@ -95,10 +91,7 @@ def parse_rtsp_credentials(uri: str) -> Optional[tuple[str, str]]:
 
 def get_device_information(ip: str, port: int = 8899, timeout: float = 6.0) -> DeviceInfo:
     text = _call(_device_url(ip, port), "<tds:GetDeviceInformation/>", DEVICE_NS, timeout)
-    raw = {
-        key: _tag(text, key)
-        for key in ("Manufacturer", "Model", "FirmwareVersion", "SerialNumber", "HardwareId")
-    }
+    raw = {key: _tag(text, key) for key in ("Manufacturer", "Model", "FirmwareVersion", "SerialNumber", "HardwareId")}
     return DeviceInfo(
         manufacturer=raw["Manufacturer"],
         model=raw["Model"],
@@ -118,9 +111,7 @@ def get_system_time(ip: str, port: int = 8899, timeout: float = 6.0) -> Optional
     """
     text = _call(_device_url(ip, port), "<tds:GetSystemDateAndTime/>", DEVICE_NS, timeout)
     for block_name in ("LocalDateTime", "UTCDateTime"):
-        block_match = re.search(
-            rf"<(?:\w+:)?{block_name}\b.*?</(?:\w+:)?{block_name}>", text, re.S
-        )
+        block_match = re.search(rf"<(?:\w+:)?{block_name}\b.*?</(?:\w+:)?{block_name}>", text, re.S)
         if not block_match:
             continue
         block = block_match.group(0)
@@ -131,7 +122,7 @@ def get_system_time(ip: str, port: int = 8899, timeout: float = 6.0) -> Optional
 
         year, month, day = _num("Year"), _num("Month"), _num("Day")
         hour, minute, second = _num("Hour"), _num("Minute"), _num("Second")
-        if None in (year, month, day):
+        if year is None or month is None or day is None:
             continue
         try:
             return datetime(year, month, day, hour or 0, minute or 0, second or 0)
@@ -149,9 +140,7 @@ def get_users(ip: str, port: int = 8899, timeout: float = 6.0) -> list[dict]:
 
 
 def get_services(ip: str, port: int = 8899, timeout: float = 6.0) -> list[str]:
-    body = (
-        "<tds:GetServices><tds:IncludeCapability>false</tds:IncludeCapability></tds:GetServices>"
-    )
+    body = "<tds:GetServices><tds:IncludeCapability>false</tds:IncludeCapability></tds:GetServices>"
     text = _call(_device_url(ip, port), body, DEVICE_NS, timeout)
     return re.findall(r"<(?:\w+:)?Namespace>([^<]+)</(?:\w+:)?Namespace>", text)
 
@@ -189,13 +178,9 @@ def get_stream_uris(ip: str, port: int = 8899, timeout: float = 6.0) -> list[Str
 def get_snapshot_uris(ip: str, port: int = 8899, timeout: float = 6.0) -> list[StreamUri]:
     out: list[StreamUri] = []
     for tok in _profile_tokens(ip, port, timeout):
-        body = (
-            f"<trt:GetSnapshotUri><trt:ProfileToken>{tok}</trt:ProfileToken></trt:GetSnapshotUri>"
-        )
+        body = f"<trt:GetSnapshotUri><trt:ProfileToken>{tok}</trt:ProfileToken></trt:GetSnapshotUri>"
         text = _call(_media_url(ip, port), body, MEDIA_NS, timeout)
         m = re.search(r"<(?:\w+:)?Uri>([^<]+)</(?:\w+:)?Uri>", text)
         if m:
-            out.append(
-                StreamUri(uri=m.group(1).strip().replace("&amp;", "&"), kind="snapshot", profile=tok)
-            )
+            out.append(StreamUri(uri=m.group(1).strip().replace("&amp;", "&"), kind="snapshot", profile=tok))
     return out

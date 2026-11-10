@@ -9,6 +9,7 @@
    LIVE-TODO: verify opcode 1400 and the ``OPPTZControl`` parameter layout
    against a real PTZ camera before relying on it.
 """
+
 from __future__ import annotations
 
 from typing import Dict
@@ -55,9 +56,7 @@ def ptz_move(
         an OK code nor 607.
     """
     if direction not in PTZ_COMMANDS:
-        raise ValueError(
-            f"unknown PTZ direction {direction!r}; expected one of {sorted(PTZ_COMMANDS)}"
-        )
+        raise ValueError(f"unknown PTZ direction {direction!r}; expected one of {sorted(PTZ_COMMANDS)}")
 
     command = PTZ_COMMANDS[direction]
     effective_step = 0 if stop else step
@@ -76,8 +75,8 @@ def ptz_move(
             },
         },
     }
-    reply = cam.send(PTZ_MSGID, body)
-    ret = reply.get("Ret") if isinstance(reply, dict) else None
+    reply = cam.send(PTZ_MSGID, body) or {}
+    ret = reply.get("Ret")
     if ret not in OK_CODES and ret != RET_UNSUPPORTED:
         raise XMCamError(f"PTZ {direction} failed on {cam.host}: Ret={ret}")
     return reply

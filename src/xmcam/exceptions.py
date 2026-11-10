@@ -3,6 +3,7 @@
 All library errors derive from :class:`XMCamError`, so callers can catch the
 whole family with a single ``except XMCamError``.
 """
+
 from __future__ import annotations
 
 

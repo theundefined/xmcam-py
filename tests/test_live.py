@@ -1,4 +1,5 @@
 """Tests for the live-view URL builders (pure string construction, offline)."""
+
 from __future__ import annotations
 
 from xmcam import live

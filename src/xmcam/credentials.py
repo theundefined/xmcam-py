@@ -1,4 +1,5 @@
 """Recover the stream account of a camera you own via anonymous ONVIF."""
+
 from __future__ import annotations
 
 from typing import Optional

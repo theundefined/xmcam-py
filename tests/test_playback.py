@@ -25,7 +25,7 @@ def _cam(factory, inbound):
 
 
 def test_download(fake_socket_factory, tmp_path):
-    inbound = (json_frame(1425, {"Ret": 100}) + build_frame(1426, b"AAAA") + build_frame(1426, b"BBBB"))
+    inbound = json_frame(1425, {"Ret": 100}) + build_frame(1426, b"AAAA") + build_frame(1426, b"BBBB")
     cam, sock = _cam(fake_socket_factory, inbound)
     seen = []
     out = tmp_path / "out.xmraw"
@@ -40,8 +40,12 @@ def test_download(fake_socket_factory, tmp_path):
 
 
 def test_non_media_ignored(fake_socket_factory, tmp_path):
-    inbound = (json_frame(1425, {"Ret": 100}) + build_frame(1426, b"AAAA")
-               + build_frame(1400, b"ctrl") + build_frame(1426, b"BBBB"))
+    inbound = (
+        json_frame(1425, {"Ret": 100})
+        + build_frame(1426, b"AAAA")
+        + build_frame(1400, b"ctrl")
+        + build_frame(1426, b"BBBB")
+    )
     cam, _ = _cam(fake_socket_factory, inbound)
     out = tmp_path / "o.bin"
     assert download_recording(cam, REC, out) == 8

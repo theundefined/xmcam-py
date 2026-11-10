@@ -8,6 +8,7 @@ environment variables. When no password is available, DVRIP subcommands try to
 recover the camera account from anonymous ONVIF automatically (the same trick
 the iCSee app uses) -- only useful on hardware you own.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -61,10 +62,9 @@ def _connect(args) -> DVRIPClient:
         print(f"[{args.host}] recovered credentials from anonymous ONVIF (user={user})", file=sys.stderr)
     cam = DVRIPClient(args.host, user=user, password=password, port=args.port)
     if not cam.login():
-        from .dvrip import RET_MEANING
+        from .dvrip import ret_meaning
 
-        ret = cam.last_login_ret
-        sys.exit(f"[{args.host}] DVRIP login failed ({RET_MEANING.get(ret, f'Ret={ret}')}).")
+        sys.exit(f"[{args.host}] DVRIP login failed ({ret_meaning(cam.last_login_ret)}).")
     return cam
 
 

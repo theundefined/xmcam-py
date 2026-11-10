@@ -4,6 +4,7 @@ These are plain dataclasses so they are easy to serialise, compare in tests and
 inspect in a REPL. Every structure keeps the original camera payload in a
 ``raw`` field so callers never lose information the typed view does not surface.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

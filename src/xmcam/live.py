@@ -4,6 +4,7 @@ These build on the anonymous-ONVIF data (see :mod:`xmcam.onvif`) and on the
 camera's HTTP ``webcapture`` endpoint. They need the stream account, which you
 either pass in or recover with :func:`xmcam.credentials.recover_credentials`.
 """
+
 from __future__ import annotations
 
 import urllib.parse
@@ -40,9 +41,7 @@ def snapshot_url(
     port: int = 80,
 ) -> str:
     """Build the HTTP ``webcapture`` snapshot URL (port 80)."""
-    query = urllib.parse.urlencode(
-        {"command": "snap", "channel": channel, "user": username, "password": password}
-    )
+    query = urllib.parse.urlencode({"command": "snap", "channel": channel, "user": username, "password": password})
     return f"http://{ip}:{port}/webcapture.jpg?{query}"
 
 

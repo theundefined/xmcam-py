@@ -8,7 +8,7 @@ RTSP = f"rtsp://{IP}:554/user=rryp_password=TESTPASS_channel=0_stream=0&amp;onvi
 
 DEVICE_INFO = (
     '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body>'
-    "<tds:GetDeviceInformationResponse xmlns:tds=\"http://www.onvif.org/ver10/device/wsdl\">"
+    '<tds:GetDeviceInformationResponse xmlns:tds="http://www.onvif.org/ver10/device/wsdl">'
     "<tds:Manufacturer>XM</tds:Manufacturer><tds:Model>IPC-Test</tds:Model>"
     "<tds:FirmwareVersion>V5.00.R02</tds:FirmwareVersion>"
     "<tds:SerialNumber>SN0000</tds:SerialNumber><tds:HardwareId>HW1</tds:HardwareId>"
@@ -94,15 +94,18 @@ def test_snapshot_uris():
 
 
 def test_parse_rtsp_credentials():
-    assert onvif.parse_rtsp_credentials(
-        f"rtsp://{IP}:554/user=rryp_password=TESTPASS_channel=0_stream=0"
-    ) == ("rryp", "TESTPASS")
+    assert onvif.parse_rtsp_credentials(f"rtsp://{IP}:554/user=rryp_password=TESTPASS_channel=0_stream=0") == (
+        "rryp",
+        "TESTPASS",
+    )
     assert onvif.parse_rtsp_credentials(f"rtsp://{IP}:554/stream1") is None
 
 
 def test_soap_fault_raises(monkeypatch):
     monkeypatch.setattr(
-        onvif, "soap_post", lambda *a, **k: "<s:Envelope><s:Body><s:Fault><s:Reason><s:Text>nope</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>"
+        onvif,
+        "soap_post",
+        lambda *a, **k: "<s:Envelope><s:Body><s:Fault><s:Reason><s:Text>nope</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>",
     )
     with pytest.raises(OnvifError):
         onvif.get_device_information(IP)

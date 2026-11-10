@@ -11,6 +11,7 @@
    (network, encoding, device identity, ...). Only use it deliberately, and
    never in tests against a real device; the test suite uses a fake socket.
 """
+
 from __future__ import annotations
 
 import json

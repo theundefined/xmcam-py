@@ -1,4 +1,5 @@
 """Recording listing via the DVRIP ``OPFileQuery`` command (msgid 1440)."""
+
 from __future__ import annotations
 
 from datetime import datetime

@@ -1,4 +1,5 @@
 """Offline tests for config export/import (DVRIP 1040/1042). No real camera is contacted."""
+
 from __future__ import annotations
 
 import json
@@ -21,8 +22,8 @@ def _parse_all_sent(sent: bytes):
     out = []
     pos = 0
     while pos < len(sent):
-        _h, _v, _s, _seq, _t, _c, msgid, length = _HEADER.unpack(sent[pos:pos + 20])
-        raw = sent[pos + 20:pos + 20 + length]
+        _h, _v, _s, _seq, _t, _c, msgid, length = _HEADER.unpack(sent[pos : pos + 20])
+        raw = sent[pos + 20 : pos + 20 + length]
         body = raw.rstrip(b"\x00").rstrip(b"\x0a").rstrip(b"\x00")
         out.append((msgid, json.loads(body.decode())))
         pos += 20 + length
@@ -38,8 +39,7 @@ def _new_cam() -> DVRIPClient:
 class TestExportConfig:
     def test_default_blocks_requested_with_1042(self, fake_socket_factory):
         replies = b"".join(
-            json_frame(1042, {"Ret": 100, name: {"v": i}})
-            for i, name in enumerate(DEFAULT_CONFIG_BLOCKS)
+            json_frame(1042, {"Ret": 100, name: {"v": i}}) for i, name in enumerate(DEFAULT_CONFIG_BLOCKS)
         )
         sock = fake_socket_factory(replies)
         result = export_config(_new_cam())

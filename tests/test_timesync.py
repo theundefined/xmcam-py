@@ -1,4 +1,5 @@
 """Offline tests for camera clock read/set (DVRIP 1450/1453). No real camera is contacted."""
+
 from __future__ import annotations
 
 import json
@@ -18,7 +19,7 @@ _HEADER = struct.Struct("BB2xIIBBHI")
 def _parse_sent(sent: bytes):
     """Split one sent packet into (msgid, parsed-json-body)."""
     _h, _v, _s, _seq, _t, _c, msgid, length = _HEADER.unpack(sent[:20])
-    body = sent[20:20 + length].rstrip(b"\x00").rstrip(b"\x0a").rstrip(b"\x00")
+    body = sent[20 : 20 + length].rstrip(b"\x00").rstrip(b"\x0a").rstrip(b"\x00")
     return msgid, json.loads(body.decode())
 
 

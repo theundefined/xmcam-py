@@ -1,4 +1,5 @@
 """Offline tests for xmcam.media (ffmpeg is simulated)."""
+
 from __future__ import annotations
 
 import struct

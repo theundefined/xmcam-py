@@ -13,6 +13,7 @@ Xiongmai's own container made of frames that start with the 4-byte marker
 The video payloads concatenate into a valid elementary stream, which
 :func:`remux_to_mp4` can wrap into an MP4 with ``ffmpeg -c copy``.
 """
+
 from __future__ import annotations
 
 import os
@@ -65,30 +66,30 @@ def demux(raw: bytes) -> tuple[bytes, bytes, str | None]:
     codec: str | None = None
     i, n = 0, len(raw)
     while i + 8 <= n:
-        if raw[i:i + 3] != b"\x00\x00\x01":
+        if raw[i : i + 3] != b"\x00\x00\x01":
             i += 1
             continue
         ft = raw[i + 3]
         if ft in (0xFC, 0xFE):
             if i + 16 > n:
                 break
-            media, _fps, _w, _h, _dt, length = struct.unpack("<BBBBII", raw[i + 4:i + 16])
+            media, _fps, _w, _h, _dt, length = struct.unpack("<BBBBII", raw[i + 4 : i + 16])
             codec = _CODECS.get(media, codec)
             start = i + 16
-            video += raw[start:start + length]
+            video += raw[start : start + length]
             i = start + length
         elif ft == 0xFD:
-            length = struct.unpack("<I", raw[i + 4:i + 8])[0]
+            length = struct.unpack("<I", raw[i + 4 : i + 8])[0]
             start = i + 8
-            video += raw[start:start + length]
+            video += raw[start : start + length]
             i = start + length
         elif ft == 0xFA:
-            _media, _samp, length = struct.unpack("<BBH", raw[i + 4:i + 8])
+            _media, _samp, length = struct.unpack("<BBH", raw[i + 4 : i + 8])
             start = i + 8
-            audio += raw[start:start + length]
+            audio += raw[start : start + length]
             i = start + length
         elif ft == 0xF9:
-            _media, _n, length = struct.unpack("<BBH", raw[i + 4:i + 8])
+            _media, _n, length = struct.unpack("<BBH", raw[i + 4 : i + 8])
             i = i + 8 + length
         else:
             i += 1
@@ -116,11 +117,18 @@ def remux_to_mp4(video_es: bytes, codec: str | None, out_path, framerate: int = 
     es_path = out.with_name(out.name + ".es" + ext)
     es_path.write_bytes(video_es)
     cmd = [
-        "ffmpeg", "-y", "-loglevel", "error",
-        "-fflags", "+genpts",
-        "-framerate", str(framerate),
-        "-i", str(es_path),
-        "-c", "copy",
+        "ffmpeg",
+        "-y",
+        "-loglevel",
+        "error",
+        "-fflags",
+        "+genpts",
+        "-framerate",
+        str(framerate),
+        "-i",
+        str(es_path),
+        "-c",
+        "copy",
     ]
     # Tag HEVC as hvc1 so the MP4 opens in the widest set of players
     # (QuickTime/Apple in particular; harmless for mplayer/VLC/mpv).
