@@ -217,6 +217,36 @@ def cmd_pull(args) -> None:
         cam.close()
 
 
+def cmd_retention(args) -> None:
+    from .files import find_newest, find_oldest, list_recordings_range
+
+    cam = _connect(args)
+    try:
+        oldest = find_oldest(cam, args.lookback_days, channel=args.channel, stream=args.stream)
+        newest = find_newest(cam, channel=args.channel, stream=args.stream)
+        if not oldest or not newest or not oldest.begin_time or not newest.begin_time:
+            print("No recordings found (try a larger --lookback-days).")
+            return
+        newest_end = newest.end_time or newest.begin_time
+        span_days = (newest_end - oldest.begin_time).total_seconds() / 86400
+        print(f"Oldest recording: {oldest.begin_time}")
+        print(f"Newest recording: {newest_end}")
+        print(f"Archive span:     {span_days:.1f} days")
+        if (datetime.now() - oldest.begin_time).days >= args.lookback_days - 1:
+            print(
+                f"(oldest is near the {args.lookback_days}-day lookback edge; retention may be "
+                "longer - rerun with a larger --lookback-days)"
+            )
+        if args.full:
+            recs = list_recordings_range(cam, oldest.begin_time, newest_end, channel=args.channel, stream=args.stream)
+            days = sorted({r.begin_time.date() for r in recs if r.begin_time})
+            total = sum(r.length_bytes for r in recs)
+            print(f"Days with recordings: {len(days)}")
+            print(f"Total: {len(recs)} file(s), {_human(total)}")
+    finally:
+        cam.close()
+
+
 def cmd_snapshot(args) -> None:
     from .live import fetch_snapshot
 
@@ -340,6 +370,22 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--raw-only", action="store_true", help="download raw stream only")
             sp.add_argument("--keep-raw", action="store_true", help="keep .xmraw next to the MP4")
         sp.set_defaults(func=func)
+
+    rt = sub.add_parser("retention", help="show how far back the recording archive goes")
+    add_auth(rt)
+    rt.add_argument(
+        "--lookback-days",
+        type=int,
+        default=90,
+        dest="lookback_days",
+        help="how many days back to probe for the oldest recording (default 90)",
+    )
+    rt.add_argument("--channel", type=int, default=0)
+    rt.add_argument("--stream", default="Main", choices=["Main", "Sub"])
+    rt.add_argument(
+        "--full", action="store_true", help="also count exact days-with-recordings and total size (enumerates all)"
+    )
+    rt.set_defaults(func=cmd_retention)
 
     s = sub.add_parser("snapshot", help="grab a JPEG snapshot")
     add_auth(s)

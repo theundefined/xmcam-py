@@ -47,7 +47,7 @@ from . import (  # noqa: E402
 )
 from .credentials import recover_credentials
 from .discovery import discover
-from .files import list_recordings, list_recordings_range
+from .files import archive_span, find_newest, find_oldest, list_recordings, list_recordings_range
 from .media import convert_raw, demux, have_ffmpeg
 from .playback import download_recording, iter_recording
 
@@ -77,6 +77,9 @@ __all__ = [
     "recover_credentials",
     "list_recordings",
     "list_recordings_range",
+    "find_oldest",
+    "find_newest",
+    "archive_span",
     "download_recording",
     "iter_recording",
     "demux",

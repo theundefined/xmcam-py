@@ -5,7 +5,7 @@ from conftest import json_frame
 
 from xmcam.dvrip import DVRIPClient
 from xmcam.exceptions import ProtocolError
-from xmcam.files import list_recordings, list_recordings_range
+from xmcam.files import find_newest, find_oldest, list_recordings, list_recordings_range
 
 E1 = {
     "FileName": "/idea0/2026-11-10/001/00.00.00-00.05.00[R][@1][0].h264",
@@ -88,3 +88,16 @@ def test_range_paginates_and_dedups(fake_socket_factory):
     # to the previous page's last EndTime.
     assert bytes(sock.sent).count(b'OPFileQuery",') >= 3
     assert b"2026-11-10 00:10:00" in bytes(sock.sent)
+
+
+def test_find_oldest(fake_socket_factory):
+    # Earliest begin_time wins even if the camera returns them out of order.
+    cam, _ = _cam(fake_socket_factory, json_frame(1441, {"Ret": 100, "OPFileQuery": [E3, E1, E2]}))
+    rec = find_oldest(cam, lookback_days=30)
+    assert rec is not None and rec.filename == E1["FileName"]
+
+
+def test_find_newest(fake_socket_factory):
+    cam, _ = _cam(fake_socket_factory, json_frame(1441, {"Ret": 100, "OPFileQuery": [E1, E2, E3]}))
+    rec = find_newest(cam)
+    assert rec is not None and rec.filename == E3["FileName"]

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import List, Union
+from datetime import datetime, timedelta
+from typing import List, Optional, Union
 
 from .dvrip import DVRIPClient, OK_CODES
 from .exceptions import ProtocolError
@@ -119,3 +119,51 @@ def list_recordings_range(
 
     out.sort(key=lambda r: (r.begin_time or datetime.min, r.filename))
     return out
+
+
+def find_oldest(
+    cam: DVRIPClient,
+    lookback_days: int = 90,
+    channel: int = 0,
+    filetype: str = "h264",
+    stream: str = "Main",
+) -> Optional[Recording]:
+    """Return the oldest recording still on the camera (within *lookback_days*).
+
+    A single ``OPFileQuery`` from ``now - lookback_days`` returns the earliest
+    page of results, so the oldest recording is just the first of them -- no need
+    to enumerate the whole archive.
+    """
+    end = datetime.now()
+    start = end - timedelta(days=lookback_days)
+    page = list_recordings(cam, start, end, channel=channel, filetype=filetype, stream=stream)
+    page = [r for r in page if r.begin_time is not None]
+    return min(page, key=lambda r: r.begin_time) if page else None  # type: ignore[arg-type,return-value]
+
+
+def find_newest(
+    cam: DVRIPClient,
+    lookback_hours: int = 48,
+    channel: int = 0,
+    filetype: str = "h264",
+    stream: str = "Main",
+) -> Optional[Recording]:
+    """Return the most recent recording on the camera (within *lookback_hours*)."""
+    end = datetime.now()
+    start = end - timedelta(hours=lookback_hours)
+    recs = list_recordings_range(cam, start, end, channel=channel, filetype=filetype, stream=stream)
+    recs = [r for r in recs if r.begin_time is not None]
+    return max(recs, key=lambda r: r.begin_time) if recs else None  # type: ignore[arg-type,return-value]
+
+
+def archive_span(
+    cam: DVRIPClient,
+    lookback_days: int = 90,
+    channel: int = 0,
+    filetype: str = "h264",
+    stream: str = "Main",
+) -> tuple:
+    """Return ``(oldest, newest)`` recordings, or ``(None, None)`` if empty."""
+    oldest = find_oldest(cam, lookback_days, channel, filetype, stream)
+    newest = find_newest(cam, 48, channel, filetype, stream)
+    return oldest, newest
