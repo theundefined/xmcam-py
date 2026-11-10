@@ -23,10 +23,13 @@ from .dvrip import DVRIP_PORT, DVRIPClient
 from .exceptions import XMCamError
 from .models import TIME_FMT
 
-
 # --------------------------------------------------------------------------
 # helpers
 # --------------------------------------------------------------------------
+#: CLI event choices -> OPFileQuery Event letter.
+EVENT_MAP = {"all": "*", "motion": "M", "regular": "R"}
+
+
 def _human(n: float) -> str:
     for unit in ("B", "KB", "MB", "GB"):
         if n < 1024 or unit == "GB":
@@ -140,13 +143,19 @@ def cmd_list(args) -> None:
     cam = _connect(args)
     try:
         recs = list_recordings_range(
-            cam, args.start, args.end, channel=args.channel, filetype=args.type, stream=args.stream
+            cam,
+            args.start,
+            args.end,
+            channel=args.channel,
+            filetype=args.type,
+            stream=args.stream,
+            event=EVENT_MAP[args.event],
         )
         total = sum(r.length_bytes for r in recs)
         for r in recs:
             begin = r.begin_time.strftime(TIME_FMT) if r.begin_time else "?"
             end = r.end_time.strftime("%H:%M:%S") if r.end_time else "?"
-            print(f"{begin} -> {end}  {_human(r.length_bytes):>9}  {r.filename}")
+            print(f"{begin} -> {end}  [{r.event or '-'}] {_human(r.length_bytes):>9}  {r.filename}")
         print(f"\nTotal: {len(recs)} file(s), {_human(total)}")
     finally:
         cam.close()
@@ -162,7 +171,13 @@ def cmd_pull(args) -> None:
     outdir.mkdir(parents=True, exist_ok=True)
     try:
         recs = list_recordings_range(
-            cam, args.start, args.end, channel=args.channel, filetype=args.type, stream=args.stream
+            cam,
+            args.start,
+            args.end,
+            channel=args.channel,
+            filetype=args.type,
+            stream=args.stream,
+            event=EVENT_MAP[args.event],
         )
         if args.grep:
             recs = [r for r in recs if args.grep in (r.filename or "")]
@@ -243,6 +258,26 @@ def cmd_retention(args) -> None:
             total = sum(r.length_bytes for r in recs)
             print(f"Days with recordings: {len(days)}")
             print(f"Total: {len(recs)} file(s), {_human(total)}")
+    finally:
+        cam.close()
+
+
+def cmd_motion(args) -> None:
+    from .files import list_recordings_range
+
+    cam = _connect(args)
+    try:
+        recs = list_recordings_range(cam, args.start, args.end, channel=args.channel, stream=args.stream, event="M")
+        if not recs:
+            print("No motion events in the given range.")
+            return
+        total = sum(r.length_bytes for r in recs)
+        for r in recs:
+            begin = r.begin_time.strftime(TIME_FMT) if r.begin_time else "?"
+            dur = r.duration_seconds
+            dur_s = f"{dur:.0f}s" if dur is not None else "?"
+            print(f"{begin}  ({dur_s:>5})  {_human(r.length_bytes):>9}")
+        print(f"\n{len(recs)} motion event(s), {_human(total)}")
     finally:
         cam.close()
 
@@ -362,6 +397,12 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--channel", type=int, default=0)
         sp.add_argument("--type", default="h264", choices=["h264", "jpg"])
         sp.add_argument("--stream", default="Main", choices=["Main", "Sub"])
+        sp.add_argument(
+            "--event",
+            default="all",
+            choices=["all", "motion", "regular"],
+            help="filter by trigger type (motion = motion-detection clips)",
+        )
         if name == "pull":
             sp.add_argument("--out", default="./recordings", help="output directory")
             sp.add_argument("--grep", help="only files whose name contains this fragment")
@@ -370,6 +411,14 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--raw-only", action="store_true", help="download raw stream only")
             sp.add_argument("--keep-raw", action="store_true", help="keep .xmraw next to the MP4")
         sp.set_defaults(func=func)
+
+    mo = sub.add_parser("motion", help="list motion-detection events (a motion timeline)")
+    add_auth(mo)
+    mo.add_argument("--start", default=f"{today} 00:00:00", help='"YYYY-MM-DD HH:MM:SS"')
+    mo.add_argument("--end", default=f"{today} 23:59:59", help='"YYYY-MM-DD HH:MM:SS"')
+    mo.add_argument("--channel", type=int, default=0)
+    mo.add_argument("--stream", default="Main", choices=["Main", "Sub"])
+    mo.set_defaults(func=cmd_motion)
 
     rt = sub.add_parser("retention", help="show how far back the recording archive goes")
     add_auth(rt)

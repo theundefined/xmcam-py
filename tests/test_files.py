@@ -90,6 +90,17 @@ def test_range_paginates_and_dedups(fake_socket_factory):
     assert b"2026-11-10 00:10:00" in bytes(sock.sent)
 
 
+def test_event_filter_is_sent(fake_socket_factory):
+    cam, sock = _cam(fake_socket_factory, json_frame(1441, {"Ret": 100, "OPFileQuery": [E1]}))
+    list_recordings(cam, "2026-11-10 00:00:00", "2026-11-10 01:00:00", event="M")
+    assert b'"Event": "M"' in bytes(sock.sent)
+
+
+def test_unsupported_event_returns_empty(fake_socket_factory):
+    cam, _ = _cam(fake_socket_factory, json_frame(1441, {"Ret": 119}))
+    assert list_recordings(cam, "2026-11-10 00:00:00", "2026-11-10 01:00:00", event="H") == []
+
+
 def test_find_oldest(fake_socket_factory):
     # Earliest begin_time wins even if the camera returns them out of order.
     cam, _ = _cam(fake_socket_factory, json_frame(1441, {"Ret": 100, "OPFileQuery": [E3, E1, E2]}))

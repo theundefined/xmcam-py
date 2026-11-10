@@ -40,8 +40,14 @@ def list_recordings(
     channel: int = 0,
     filetype: str = "h264",
     stream: str = "Main",
+    event: str = "*",
 ) -> List[Recording]:
-    """Query the camera for recordings between *start* and *end* (one query)."""
+    """Query the camera for recordings between *start* and *end* (one query).
+
+    *event* filters by trigger type: ``"*"`` for all, ``"M"`` for motion, ``"R"``
+    for regular/continuous. Unsupported event types (firmware answers ``Ret 119``)
+    yield an empty list rather than an error.
+    """
     mask = STREAM_MASKS.get(stream, STREAM_MASKS["Main"])
     reply = cam.send(
         FILE_QUERY_MSGID,
@@ -52,7 +58,7 @@ def list_recordings(
                 "EndTime": _to_str(end),
                 "Channel": channel,
                 "DriverTypeMask": "0x0000FFFF",
-                "Event": "*",
+                "Event": event,
                 "Type": filetype,
                 "StreamType": mask,
             },
@@ -60,6 +66,8 @@ def list_recordings(
     )
     reply = reply or {}
     ret = reply.get("Ret")
+    if ret == 119:  # event type not supported by this firmware
+        return []
     if ret not in OK_CODES:
         raise ProtocolError(f"OPFileQuery failed (Ret={ret})")
     entries = reply.get("OPFileQuery") or []
@@ -78,6 +86,7 @@ def list_recordings_range(
     channel: int = 0,
     filetype: str = "h264",
     stream: str = "Main",
+    event: str = "*",
     page_limit: int = OPFILEQUERY_PAGE_LIMIT,
 ) -> List[Recording]:
     """List recordings between *start* and *end*, paginating over time.
@@ -96,7 +105,7 @@ def list_recordings_range(
     cursor = start_dt
 
     while cursor < end_dt:
-        chunk = list_recordings(cam, cursor, end_dt, channel, filetype, stream)
+        chunk = list_recordings(cam, cursor, end_dt, channel, filetype, stream, event)
         if not chunk:
             break
         new = 0

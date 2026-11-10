@@ -7,6 +7,7 @@ inspect in a REPL. Every structure keeps the original camera payload in a
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Optional
@@ -29,6 +30,21 @@ def parse_file_length(value: Any) -> int:
     except (TypeError, ValueError):
         return 0
     return kb * 1024
+
+
+#: Map of the single-letter event tag embedded in a recording's file name.
+EVENT_NAMES = {"R": "regular", "M": "motion", "A": "alarm", "H": "manual", "I": "intelligent"}
+
+
+def parse_event(filename: str) -> str:
+    """Return the single-letter event tag from a file name (e.g. ``M`` or ``R``).
+
+    Xiongmai names recordings ``.../HH.MM.SS-HH.MM.SS[X][@token][n].h264`` where
+    ``X`` marks why it was recorded: ``R`` = regular/continuous, ``M`` = motion.
+    Returns ``""`` when no tag is present.
+    """
+    match = re.search(r"\[([A-Z])\]", filename or "")
+    return match.group(1) if match else ""
 
 
 def _parse_time(value: Any) -> Optional[datetime]:
@@ -98,13 +114,15 @@ class Recording:
     disk_no: Any = None
     serial_no: Any = None
     stream_type: str = "Main"
+    event: str = ""  # single-letter event tag: "M" motion, "R" regular, ...
     raw: dict = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, entry: dict, channel: int = 0, stream_type: str = "Main") -> "Recording":
         """Build a :class:`Recording` from a raw ``OPFileQuery`` list entry."""
+        filename = entry.get("FileName", "")
         return cls(
-            filename=entry.get("FileName", ""),
+            filename=filename,
             begin_time=_parse_time(entry.get("BeginTime")),
             end_time=_parse_time(entry.get("EndTime")),
             length_bytes=parse_file_length(entry.get("FileLength", 0)),
@@ -112,6 +130,7 @@ class Recording:
             disk_no=entry.get("DiskNo"),
             serial_no=entry.get("SerialNo"),
             stream_type=stream_type,
+            event=parse_event(filename),
             raw=entry,
         )
 
@@ -120,3 +139,13 @@ class Recording:
         if self.begin_time and self.end_time:
             return (self.end_time - self.begin_time).total_seconds()
         return None
+
+    @property
+    def is_motion(self) -> bool:
+        """True if this recording was triggered by motion detection."""
+        return self.event == "M"
+
+    @property
+    def event_name(self) -> str:
+        """Human-readable event type (``motion``, ``regular``, ...)."""
+        return EVENT_NAMES.get(self.event, self.event or "unknown")

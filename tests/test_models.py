@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from xmcam.models import Recording, parse_file_length
+from xmcam.models import Recording, parse_event, parse_file_length
 
 
 class TestParseFileLength:
@@ -37,3 +37,23 @@ class TestRecording:
         assert rec.length_bytes == 50124 * 1024
         assert rec.duration_seconds == 300.0
         assert rec.raw is entry
+
+
+class TestEvent:
+    def test_parse_event(self):
+        assert parse_event("/x/08.10.24-08.10.41[M][@4ae7][1].h264") == "M"
+        assert parse_event("/x/08.00.00-08.05.00[R][@1][0].h264") == "R"
+        assert parse_event("/x/no-tag.h264") == ""
+
+    def test_is_motion_and_name(self):
+        rec = Recording.from_dict(
+            {
+                "FileName": "/idea0/2026-11-10/001/08.10.24-08.10.41[M][@4ae7][1].h264",
+                "BeginTime": "2026-11-10 08:10:24",
+                "EndTime": "2026-11-10 08:10:41",
+                "FileLength": "0x1",
+            }
+        )
+        assert rec.event == "M"
+        assert rec.is_motion is True
+        assert rec.event_name == "motion"
