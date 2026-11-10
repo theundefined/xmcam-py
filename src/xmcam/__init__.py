@@ -19,7 +19,8 @@ Everything runs on the local network - no cloud, no internet.
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
 
 from .dvrip import DVRIP_PORT, DVRIPClient, OK_CODES, RET_MEANING, sofia_hash
 from .exceptions import (
@@ -97,3 +98,8 @@ __all__ = [
     "config_backup",
     "timesync",
 ]
+
+try:
+    __version__ = _pkg_version("xmcam-py")
+except PackageNotFoundError:  # pragma: no cover - running from a source tree
+    __version__ = "0.0.0+unknown"
