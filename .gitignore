@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Downloaded recordings / caches (never commit footage or caches)
+*.xmraw
+*.h264
+*.h265
+*.mp4
+*.jpg
+nagrania/
+recordings/
+cache/
+.xmcam-cache/
+
+# Local credentials / scratch (never commit secrets)
+*.secret
+.env
+secrets.*
+_scratch/
