@@ -63,3 +63,42 @@ def test_iter_and_constants(fake_socket_factory):
     cam, _ = _cam(fake_socket_factory, inbound)
     assert list(iter_recording(cam, REC)) == [b"ZZ"]
     assert MEDIA_MSGID["DownloadStart"] == 1426
+
+
+def _sized(length):
+    return Recording(
+        filename=REC.filename,
+        begin_time=REC.begin_time,
+        end_time=REC.end_time,
+        length_bytes=length,
+        raw=REC.raw,
+    )
+
+
+def test_stops_once_listed_length_is_received(fake_socket_factory, tmp_path):
+    """The camera keeps the stream open after the last byte; don't wait for it to close."""
+    inbound = (
+        json_frame(1425, {"Ret": 100})
+        + build_frame(1426, b"AAAA")
+        + build_frame(1426, b"BBBB")
+        + build_frame(1426, b"CCCC")
+    )
+    cam, sock = _cam(fake_socket_factory, inbound)
+    out = tmp_path / "o.bin"
+    assert download_recording(cam, _sized(8), out) == 8
+    assert out.read_bytes() == b"AAAABBBB"
+    assert b"Stop" in bytes(sock.sent)
+    assert len(sock.inbound) > 0  # the third frame was never read
+
+
+def test_stop_at_length_can_be_disabled(fake_socket_factory, tmp_path):
+    inbound = json_frame(1425, {"Ret": 100}) + build_frame(1426, b"AAAA") + build_frame(1426, b"BBBB")
+    cam, _ = _cam(fake_socket_factory, inbound)
+    out = tmp_path / "o.bin"
+    assert download_recording(cam, _sized(4), out, stop_at_length=False) == 8
+
+
+def test_unknown_length_reads_until_stream_ends(fake_socket_factory, tmp_path):
+    inbound = json_frame(1425, {"Ret": 100}) + build_frame(1426, b"AAAA") + build_frame(1426, b"BBBB")
+    cam, _ = _cam(fake_socket_factory, inbound)
+    assert download_recording(cam, _sized(0), tmp_path / "o.bin") == 8

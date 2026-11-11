@@ -36,11 +36,16 @@ def iter_recording(
     channel: int = 0,
     stream: str = "Main",
     idle_timeout: float = 20,
+    stop_at_length: bool = True,
 ) -> Iterator[bytes]:
     """Claim and start a download, yielding each media payload as it arrives.
 
-    Ends when the camera closes the stream (or nothing arrives for
-    *idle_timeout* seconds). ``Stop`` is sent in a ``finally`` block.
+    Ends as soon as the recording's listed ``length_bytes`` have been received
+    (when *stop_at_length* is true and the length is known): the camera does not
+    close the stream after the last byte, so waiting for that would cost the full
+    *idle_timeout* (20 s) on every download. Otherwise it ends when the camera
+    closes the stream or nothing arrives for *idle_timeout* seconds.
+    ``Stop`` is sent in a ``finally`` block.
     """
     start, end = _times(recording)
     param = {
@@ -73,12 +78,17 @@ def iter_recording(
         if sock is not None:
             sock.settimeout(idle_timeout)
         cam.send(CONTROL_MSGID, body("DownloadStart"), wait_response=False)
+        expected = recording.length_bytes if stop_at_length else 0
+        received = 0
         while True:
             msgid, payload = cam.read_frame()
             if msgid is None:
                 break
             if msgid == DOWNLOAD_MEDIA_MSGID and payload:
+                received += len(payload)
                 yield payload
+                if expected > 0 and received >= expected:
+                    break
     finally:
         try:
             cam.send(CONTROL_MSGID, body("Stop"), wait_response=False)
@@ -99,11 +109,12 @@ def download_recording(
     channel: int = 0,
     stream: str = "Main",
     idle_timeout: float = 20,
+    stop_at_length: bool = True,
 ) -> int:
     """Download *recording* to *out_path*; return the number of bytes written."""
     total = 0
     with open(out_path, "wb") as fh:
-        for chunk in iter_recording(cam, recording, channel, stream, idle_timeout):
+        for chunk in iter_recording(cam, recording, channel, stream, idle_timeout, stop_at_length):
             fh.write(chunk)
             total += len(chunk)
             if progress is not None:
