@@ -26,7 +26,9 @@ gap with a clean, dependency-free API and a scriptable CLI.
   single files, arbitrary ranges or a whole day.
 - **Transparent conversion** — the raw stream is Xiongmai's own container;
   `xmcam` demuxes it to an elementary H.264/H.265 stream and (with `ffmpeg`)
-  remuxes to a playable **MP4** without re-encoding.
+  remuxes to a playable **MP4** without re-encoding. The camera's audio (G.711
+  A-law) is kept (encoded to AAC), with the video re-timed from the audio clock so
+  picture and sound stay in sync. `xmcam.XmDemuxer` demuxes incrementally for streaming.
 - **Live** — build RTSP URLs and grab JPEG snapshots.
 - **PTZ** — pan/tilt/zoom over ONVIF where the hardware supports it.
 - **Config backup** and **clock sync**.

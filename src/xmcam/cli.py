@@ -462,7 +462,12 @@ def build_parser() -> argparse.ArgumentParser:
     cv = sub.add_parser("convert", help="convert a local .xmraw recording to MP4 (no camera needed)")
     cv.add_argument("input", help="path to a downloaded .xmraw file")
     cv.add_argument("--out", help="output MP4 path (default: same name with .mp4)")
-    cv.add_argument("--framerate", type=int, default=15)
+    cv.add_argument(
+        "--framerate",
+        type=float,
+        default=None,
+        help="frame rate (default: measured from the audio clock, else the recording header)",
+    )
     cv.set_defaults(func=cmd_convert)
 
     st = sub.add_parser("synctime", help="read or set the camera clock")

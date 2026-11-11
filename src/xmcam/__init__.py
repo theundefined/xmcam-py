@@ -49,7 +49,7 @@ from . import (  # noqa: E402
 from .credentials import recover_credentials
 from .discovery import discover
 from .files import archive_span, find_newest, find_oldest, list_recordings, list_recordings_range
-from .media import convert_raw, demux, have_ffmpeg
+from .media import XmDemuxer, convert_raw, demux, have_ffmpeg
 from .playback import download_recording, iter_recording
 
 __all__ = [
@@ -84,6 +84,7 @@ __all__ = [
     "download_recording",
     "iter_recording",
     "demux",
+    "XmDemuxer",
     "convert_raw",
     "have_ffmpeg",
     # modules
